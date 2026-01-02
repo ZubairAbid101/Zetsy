@@ -1,0 +1,121 @@
+import React, { useEffect, useState } from "react";
+import { BadgeCheck, X } from "lucide-react";
+
+const StoryViewer = ({ viewStory, setViewStory }) => {
+  const [progress, setProgress] = useState(0);
+
+  const handleClose = () => {
+    setViewStory(null);
+  };
+
+  if (!viewStory) return null;
+
+  const renderContent = () => {
+    switch (viewStory.media_type) {
+      case "image":
+        return (
+          <img
+            src={viewStory.media_url}
+            alt="Story Content"
+            className="max-w-full max-h-screen object-contain"
+          />
+        );
+
+      case "video":
+        return (
+          <video
+            onEnded={() => setViewStory(null)}
+            src={viewStory.media_url}
+            alt="Story Content"
+            controls
+            autoPlay
+            className="max-w-full max-h-screen object-contain"
+          />
+        );
+
+      case "text":
+        return (
+          <div className="w-full h-full flex items-center justify-center p-8 text-white text-2xl text-center">
+            {viewStory.content}
+          </div>
+        );
+
+      default:
+        return null;
+    }
+  };
+
+  useEffect(() => {
+    let timer, progressInterval;
+
+    if (viewStory && viewStory.media_type !== "video") {
+      setProgress(0);
+      const duration = 10000; // 10 seconds for images and text
+      const setTime = 100; // Update every 100ms
+      let elapsed = 0;
+
+      progressInterval = setInterval(() => {
+        elapsed += setTime;
+        setProgress((elapsed / duration) * 100);
+      }, setTime);
+
+      timer = setTimeout(() => {
+        setViewStory(null);
+      }, duration);
+    }
+
+    return () => {
+      clearTimeout(timer);
+      clearInterval(progressInterval);
+    };
+  }, [viewStory, setViewStory]);
+
+  return (
+    <div
+      className="fixed inset-0 z-110 min-h-screen bg-black/80 backdrop-blur text-white flex items-center justify-center p-4"
+      style={{
+        backgroundColor:
+          viewStory.media_type === "text"
+            ? viewStory.background_color
+            : "#00000",
+      }}
+    >
+      {/* Progress Bar */}
+      <div className="absolute top-0 left-0 w-full h-1 bg-gray-700">
+        <div
+          className="h-full bg-white"
+          style={{ width: `${progress}%`, transition: "width 100ms linear" }}
+        ></div>
+      </div>
+
+      {/* User Info */}
+      <div className="absolute top-4 left-4 flex items-center space-x-3 p-2 px-4 sm:p-4 sm:px-8 backdrop-blur-2xl rounded bg-black/50">
+        <img
+          src={viewStory.user?.profile_picture}
+          alt="User profile picture"
+          className="size-7 sm:size-8 rounded-full object-cover border border-white"
+        />
+
+        <div className="text-white font-medium flex items-center gap-1.5">
+          <span>{viewStory.user?.full_name}</span>
+          <BadgeCheck size={18} />
+        </div>
+      </div>
+
+      {/* Close Button */}
+      <button
+        onClick={handleClose}
+        className="absolute top-4 right-4 text-white text-3xl font-bold focus:outline-none"
+      >
+        <X className="w-8 h-8 hover:scale-110 transition cursor-pointer" />
+      </button>
+
+      {/* Content */}
+      <div className="max-w-[90vw] max-h-[80vh] flex items-center justify-center">
+        {renderContent()}
+      </div>
+    </div>
+  );
+};
+
+export default StoryViewer;
