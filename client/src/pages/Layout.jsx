@@ -4,15 +4,17 @@ import { Menu, X } from "lucide-react";
 import { dummyUserData } from "../assets/assets.js";
 import Sidebar from "../components/Sidebar";
 import Loading from "../components/Loading";
+import { useTheme } from "../context/AppContext.jsx";
 
 const Layout = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const user = dummyUserData;
-
+  const { isDarkMode } = useTheme();
+  
   return user ? (
     <div className="w-full flex h-screen">
       <Sidebar sidebarOpen={sidebarOpen} setSidebarOpen={setSidebarOpen} />
-      <div className="flex-1 bg-slate-50">
+      <div className={`flex-1 ${isDarkMode ? 'bg-white' : 'bg-slate-900'}`}>
         <Outlet />
       </div>
 

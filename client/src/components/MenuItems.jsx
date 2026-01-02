@@ -1,10 +1,13 @@
 import React from "react";
 import { NavLink } from "react-router-dom";
 import { menuItemsData } from "../assets/assets.js";
+import { useTheme } from "../context/AppContext";
 
 const MenuItems = ({ setSidebarOpen }) => {
+  const {isDarkMode} = useTheme();
+
   return (
-    <div className="px-6 text-gray-600 space-y-1 font-medium">
+    <div className={`px-6 ${isDarkMode ? 'text-gray-600' : 'text-gray-300'} space-y-1 font-medium`}>
       {menuItemsData.map(({ to, label, Icon }) => {
         return (
           <NavLink

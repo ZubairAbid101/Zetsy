@@ -1,21 +1,24 @@
 import React from "react";
 import { Routes, Route } from "react-router-dom";
 import { useUser } from "@clerk/clerk-react";
-import Login from "./pages/Login.jsx";
-import Feed from "./pages/Feed.jsx";
-import Messages from "./pages/Messages.jsx";
-import ChatBox from "./pages/ChatBox.jsx";
-import Connections from "./pages/Connections.jsx";
-import Discover from "./pages/Discover.jsx";
-import Profile from "./pages/Profile.jsx";
-import CreatePost from "./pages/CreatePost.jsx";
-import Layout from "./pages/Layout.jsx";
+import {Toaster} from 'react-hot-toast';
+import Login from "./pages/Login";
+import Feed from "./pages/Feed";
+import Messages from "./pages/Messages";
+import ChatBox from "./pages/ChatBox";
+import Connections from "./pages/Connections";
+import Discover from "./pages/Discover";
+import Profile from "./pages/Profile";
+import CreatePost from "./pages/CreatePost";
+import Layout from "./pages/Layout";
+import { ThemeProvider } from "./context/AppContext";
 
 const App = () => {
   const { user } = useUser();
 
   return (
-    <>
+    <ThemeProvider>
+      <Toaster position="top-center" />
       <Routes>
         <Route path="/" element={!user ? <Login /> : <Layout />}>
           <Route index element={<Feed />} />
@@ -28,7 +31,7 @@ const App = () => {
           <Route path="create-post" element={<CreatePost />} />
         </Route>
       </Routes>
-    </>
+    </ ThemeProvider>
   );
 };
 
