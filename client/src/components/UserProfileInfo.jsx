@@ -27,7 +27,7 @@ const UserProfileInfo = ({ user, posts, profileId, setShowEdit }) => {
         </div>
 
         <div className="w-full pt-16 md:pt-0 md:pl-36">
-          <div className="flex flex-col md:flex-row items-start justify-between">
+          <div className="flex flex-col lg:flex-row items-start justify-between">
             <div>
               {/* Full Name and Verified Icon */}
               <div className="flex items-center gap-3">
@@ -52,7 +52,7 @@ const UserProfileInfo = ({ user, posts, profileId, setShowEdit }) => {
                 onClick={() => {
                   setShowEdit(true);
                 }}
-                className={`flex items-center gap-2 border px-4 py-2 rounded-lg font-medium transition-colors mt-4 md:mt-0 cursor-pointer ${
+                className={`flex items-center gap-2 border px-4 py-2 rounded-lg font-medium transition-colors mt-4 lg:mt-0 cursor-pointer ${
                   !isDarkMode
                     ? "border-gray-600 hover:bg-gray-700 text-gray-200"
                     : "border-gray-300 hover:bg-gray-50 text-gray-900"

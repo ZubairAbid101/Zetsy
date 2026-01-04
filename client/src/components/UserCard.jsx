@@ -14,7 +14,7 @@ const UserCard = ({ user }) => {
   return (
     <div
       key={user._id}
-      className={`p-4 pt-6 flex flex-col justify-between w-72 shadow border rounded-md ${
+      className={`p-4 pt-6 flex flex-col justify-between w-72 max-lg:w-55 max-sm:w-72 shadow border rounded-md ${
         !isDarkMode 
           ? "bg-gray-800 border-gray-700" 
           : "bg-white border-gray-200"

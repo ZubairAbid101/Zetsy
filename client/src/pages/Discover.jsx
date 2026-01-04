@@ -24,7 +24,7 @@ const Discover = () => {
   };
 
   return (
-    <div className={`min-h-screen ${
+    <div className={`h-full overflow-y-scroll no-scrollbar ${
       !isDarkMode 
         ? "bg-gray-900" 
         : "bg-gradient-to-b from-slate-50 to-white"
@@ -71,7 +71,7 @@ const Discover = () => {
         </div>
 
         {/* User Cards */}
-        <div className="flex flex-wrap gap-6">
+        <div className="flex flex-wrap gap-6 max-sm:justify-center">
           {users.map((user) => {
             return <UserCard key={user._id} user={user} />;
           })}
