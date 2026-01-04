@@ -9,13 +9,18 @@ const ChatBox = () => {
   const [text, setText] = useState("");
   const [image, setImage] = useState(null);
   const [user, setUser] = useState(dummyUserData);
-  const messageEndRef = useRef(null);
+  const chatContainerRef = useRef(null);
 
   const sendMessage = async () => {};
 
   useEffect(() => {
-    messageEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages]);
+  if (chatContainerRef.current) {
+    chatContainerRef.current.scrollTo({
+      top: chatContainerRef.current.scrollHeight,
+      behavior: 'smooth'
+    });
+  }
+}, [messages]);
 
   return (
     user && (
@@ -56,7 +61,7 @@ const ChatBox = () => {
         </div>
 
         {/* Chat Box */}
-        <div className="p-5 md:px-10 h-full overflow-y-scroll">
+        <div ref={chatContainerRef} className="p-5 md:px-10 h-full overflow-y-scroll no-scrollbar">
           <div className="space-y-4 max-w-4xl mx-auto">
             {messages
               .toSorted((a, b) => new Date(a.createdAt) - new Date(b.createdAt))
@@ -92,7 +97,7 @@ const ChatBox = () => {
                 );
               })}
 
-            <div ref={messageEndRef} />
+            
           </div>
         </div>
 

@@ -65,12 +65,12 @@ const Connections = () => {
         </div>
 
         {/* Counts */}
-        <div className="mb-8 flex flex-wrap gap-6">
+        <div className="mb-8 flex flex-wrap justify-center sm:justify-start gap-6">
           {dataArray.map((item, index) => {
             return (
               <div
                 key={index}
-                className={`flex flex-col items-center justify-center gap-1 border h-20 w-40 shadow rounded-md ${
+                className={`flex flex-col items-center justify-center gap-1 border h-20 w-25 sm:w-40 shadow rounded-md ${
                   !isDarkMode 
                     ? "border-gray-700 bg-gray-800 text-gray-100" 
                     : "border-gray-200 bg-white text-slate-900"
