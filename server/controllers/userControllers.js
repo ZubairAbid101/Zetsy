@@ -249,7 +249,76 @@ export const sendConnectionRequest = async (req, res) => {
     });
     await newConnection.save();
 
-    res.json({success: true, message: "Connection request sent successfully" });
+    res.json({
+      success: true,
+      message: "Connection request sent successfully",
+    });
+  } catch (error) {
+    res.json({ success: false, message: error.message });
+  }
+};
+
+// Get user connections
+export const getUserConnections = async (req, res) => {
+  try {
+    const { userId } = req.auth();
+
+    const user = await User.findById(userId).populate(
+      "connections followers following"
+    );
+
+    const connections = user.connections;
+    const followers = user.followers;
+    const following = user.following;
+
+    const pendingConnections = (
+      await Connection.find({ to_user_id: userId, status: "pending" })
+    )
+      .populate("from_user_id")
+      .map((connection) => connection.from_user_id);
+
+    res.json({
+      success: true,
+      data: { connections, followers, following, pendingConnections },
+    });
+  } catch (error) {
+    res.json({ success: false, message: error.message });
+  }
+};
+
+// Accept connection request
+export const acceptConnectionRequest = async (req, res) => {
+  try {
+    const { userId } = req.auth();
+    const { connectionFromUserId } = req.body;
+
+    const connection = await Connection.findOne({
+      from_user_id: connectionFromUserId,
+      to_user_id: userId,
+      status: "pending",
+    });
+
+    if (!connection) {
+      return res.json({
+        success: false,
+        message: "Connection request not found",
+      });
+    }
+
+    // Update connection property for receiver
+    const user = await User.findById(userId);
+    user.connections.push(connectionFromUserId);
+    await user.save();
+
+    // Update connection property for sender
+    const fromUser = await User.findById(connectionFromUserId);
+    fromUser.connections.push(userId);
+    await fromUser.save();
+
+    connection.status = "accepted";
+    await connection.save();
+
+    res.json({ success: true, message: "Connection request accepted" });
   } catch (error) {
     res.json({ success: false, message: error.message });
   }
