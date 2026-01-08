@@ -1,7 +1,6 @@
-import { format } from "path";
-import imageKitClient from "../configs/imagekit.js";
-import User from "../models/User.js";
 import fs from "fs";
+import imageKitClient from "../configs/imageKit.js";
+import User from "../models/User.js";
 import Connection from "../models/Connections.js";
 
 // Get user data
