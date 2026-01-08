@@ -2,6 +2,7 @@ import { format } from "path";
 import imageKitClient from "../configs/imagekit.js";
 import User from "../models/User.js";
 import fs from "fs";
+import Connection from "../models/Connections.js";
 
 // Get user data
 export const getUserData = async (req, res) => {
@@ -125,7 +126,7 @@ export const updateUserData = async (req, res) => {
 // Find users by name or username or email or location
 export const discoverUsers = async (req, res) => {
   try {
-    const { userId } = req.auth;
+    const { userId } = req.auth();
     const { input } = req.body;
 
     const users = await User.find({
@@ -152,7 +153,7 @@ export const discoverUsers = async (req, res) => {
 // Follow user
 export const followUser = async (req, res) => {
   try {
-    const { userId } = req.auth;
+    const { userId } = req.auth();
     const { followId } = req.body;
 
     const user = await User.findById(userId);
@@ -180,7 +181,7 @@ export const followUser = async (req, res) => {
 // Unfollow user
 export const unfollowUser = async (req, res) => {
   try {
-    const { userId } = req.auth;
+    const { userId } = req.auth();
     const { unfollowId } = req.body;
 
     // Remove unfollowId from user's following list
@@ -202,6 +203,53 @@ export const unfollowUser = async (req, res) => {
     await unfollowedUser.save();
 
     res.json({ success: true, message: "User unfollowed successfully" });
+  } catch (error) {
+    res.json({ success: false, message: error.message });
+  }
+};
+
+// Send connection request
+export const sendConnectionRequest = async (req, res) => {
+  try {
+    const { userId } = req.auth();
+    const { connectionToUserId } = req.body;
+
+    // Check if connection request already exists
+    const existingConnection = await Connection.findOne({
+      $or: [
+        { from_user_id: userId, to_user_id: connectionToUserId },
+        { from_user_id: connectionToUserId, to_user_id: userId },
+      ],
+    });
+
+    if (existingConnection) {
+      return res.json({
+        success: false,
+        message: "Connection request already sent",
+      });
+    }
+
+    // Check if user has sent more than 20 connection requests today
+    const last24Hours = new Date(Date.now() - 24 * 60 * 60 * 1000);
+    const connectionRequestsCount = await Connection.find({
+      from_user_id: userId,
+      createdAt: { $gt: last24Hours },
+    });
+    if (connectionRequestsCount.length >= 20) {
+      return res.json({
+        success: false,
+        message: "Connection request limit reached for today",
+      });
+    }
+
+    // Create new connection request
+    const newConnection = new Connection({
+      from_user_id: userId,
+      to_user_id: connectionToUserId,
+    });
+    await newConnection.save();
+
+    res.json({success: true, message: "Connection request sent successfully" });
   } catch (error) {
     res.json({ success: false, message: error.message });
   }
