@@ -1,6 +1,7 @@
 import fs from "fs";
 import imageKitClient from "../configs/imageKit.js";
 import Post from "../models/Post.js";
+import User from "../models/User.js";
 
 // Add post
 export const addPost = async (req, res) => {
@@ -46,6 +47,24 @@ export const addPost = async (req, res) => {
 
       res.json({ success: true, message: "Post created successfully." });
     }
+  } catch (error) {
+    res.json({ success: false, message: error.message });
+  }
+};
+
+// Get posts
+export const getPosts = async (req, res) => {
+  try {
+    const { userId } = req.auth();
+    const user = await User.findById(userId);
+
+    // Fetch posts from the user, users they follow, and their connections
+    const userIds = [userId, ...user.following, ...user.connections];
+    const posts = await Post.find({ user: { $in: userIds } })
+      .populate("user")
+      .sort({ createdAt: -1 });
+
+    res.json({ success: true, message: "Posts fetched successfully.", posts });
   } catch (error) {
     res.json({ success: false, message: error.message });
   }
