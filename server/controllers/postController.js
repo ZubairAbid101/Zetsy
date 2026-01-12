@@ -69,3 +69,28 @@ export const getPosts = async (req, res) => {
     res.json({ success: false, message: error.message });
   }
 };
+
+// Like Post
+export const likePost = async (req, res) => {
+  try {
+    const { userId } = req.auth();
+    const { postId } = req.body;
+
+    const post = await Post.findById(postId);
+
+    if (post.likes.includes(userId)) {
+      // Unlike the post
+      post.likes = post.likes.filter((id) => id !== userId);
+      await post.save();
+      res.json({ success: true, message: "Post unliked successfully." });
+    }
+    else {
+      // Like the post
+      post.likes.push(userId);
+      await post.save();
+      res.json({ success: true, message: "Post liked successfully." });
+    }
+  } catch (error) {
+    res.json({ success: false, message: error.message });
+  }
+};
