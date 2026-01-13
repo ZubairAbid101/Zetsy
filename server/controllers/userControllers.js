@@ -2,6 +2,7 @@ import fs from "fs";
 import imageKitClient from "../configs/imageKit.js";
 import User from "../models/User.js";
 import Connection from "../models/Connections.js";
+import Post from "../models/Post.js";
 
 // Get user data
 export const getUserData = async (req, res) => {
@@ -322,3 +323,24 @@ export const acceptConnectionRequest = async (req, res) => {
     res.json({ success: false, message: error.message });
   }
 };
+
+// Get other user profiles
+export const getUserProfile = async (req, res) => {
+  try {
+    const {profileId} = req.body;
+
+    const profile = await User.findById(profileId);
+
+    // User not found
+    if (!profile) {
+      return res.json({ success: false, message: "User not found" });
+    }
+
+    // Get user's posts
+    const profilePosts = await Post.find({ user: profileId }).populate('user');
+
+    res.json({success: true, message: "User profile retrieved successfully", data: {profile, posts: profilePosts}});
+  } catch (error) {
+    res.json({ success: false, message: error.message });
+  }
+}
