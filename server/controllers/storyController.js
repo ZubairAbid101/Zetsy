@@ -2,6 +2,7 @@ import fs from "fs";
 import imageKitClient from "../configs/imageKit.js";
 import Story from "../models/Story.js";
 import User from "../models/User.js";
+import { inngest } from "../inngest/index.js";
 
 // Add user story
 export const addUserStory = async (req, res) => {
@@ -26,7 +27,7 @@ export const addUserStory = async (req, res) => {
       });
 
       // Store story in DB
-      await Story.create({
+      const newStory = await Story.create({
         user: userId,
         content,
         media_url: url,
@@ -35,6 +36,12 @@ export const addUserStory = async (req, res) => {
       });
 
       res.json({ success: true, message: "Story added successfully" });
+
+      // Trigger story delete event
+      await inngest.send({
+        name: "app/story-delete",
+        data: { storyId: newStory._id },
+      });
     }
   } catch (error) {
     res.json({ success: false, message: error.message });

@@ -2,6 +2,7 @@ import { Inngest } from "inngest";
 import User from "../models/User.js";
 import Connection from "../models/Connections.js";
 import sendEmail from "../configs/nodeMailer.js";
+import Story from "../models/Story.js";
 
 export const inngest = new Inngest({ id: "zetsy-app" });
 
@@ -33,7 +34,7 @@ const syncUserCreate = inngest.createFunction(
     };
 
     await User.create(userData);
-  }
+  },
 );
 
 // Update user data in db
@@ -53,7 +54,7 @@ const syncUserUpdate = inngest.createFunction(
     };
 
     await User.findByIdAndUpdate(id, updatedUserData);
-  }
+  },
 );
 
 // Delete user data from db
@@ -64,7 +65,7 @@ const syncUserDelete = inngest.createFunction(
     const { id } = event.data;
 
     await User.findByIdAndDelete(id);
-  }
+  },
 );
 
 // Send Pending Connection Email Reminder
@@ -76,7 +77,7 @@ const sendNewConnectionReminder = inngest.createFunction(
 
     await step.run("send-connection-reminder-email", async () => {
       const connection = await Connection.findById(connectionId).populate(
-        "from_user_id to_user_id"
+        "from_user_id to_user_id",
       );
       const subject = "New Connection Request";
       const body = `
@@ -144,7 +145,7 @@ const sendNewConnectionReminder = inngest.createFunction(
     await step.sleepUntil("reminder-email-in-24-hours", in24Hours);
     await step.run("send-connection-reminder-email-2", async () => {
       const connection = await Connection.findById(connectionId).populate(
-        "from_user_id to_user_id"
+        "from_user_id to_user_id",
       );
 
       if (connection.status === "pending") {
@@ -213,7 +214,28 @@ const sendNewConnectionReminder = inngest.createFunction(
         });
       }
     });
-  }
+  },
 );
 
-export const functions = [syncUserCreate, syncUserUpdate, syncUserDelete, sendNewConnectionReminder];
+// Delete user story after 24 hours
+const deleteStory = inngest.createFunction(
+  { id: "delete-user-story" },
+  { event: "app/story-delete" },
+  async ({ event, step }) => {
+    const { storyId } = event.data;
+    const in24Hours = new Date(Date.now() + 24 * 60 * 60 * 1000);
+    await step.sleepUntil("delete-story-in-24-hours", in24Hours);
+    await step.run("delete-story", async () => {
+      await Story.findByIdAndDelete(storyId);
+      return { success: true, message: "Story deleted successfully" };
+    });
+  },
+);
+
+export const functions = [
+  syncUserCreate,
+  syncUserUpdate,
+  syncUserDelete,
+  sendNewConnectionReminder,
+  deleteStory,
+];
