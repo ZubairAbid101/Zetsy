@@ -3,6 +3,7 @@ import imageKitClient from "../configs/imageKit.js";
 import User from "../models/User.js";
 import Connection from "../models/Connections.js";
 import Post from "../models/Post.js";
+import { inngest } from "../inngest/index.js";
 
 // Get user data
 export const getUserData = async (req, res) => {
@@ -198,7 +199,7 @@ export const unfollowUser = async (req, res) => {
     // Remove userId from unfollowed user's followers list
     const unfollowedUser = await User.findById(unfollowId);
     unfollowedUser.followers = unfollowedUser.followers.filter(
-      (id) => id !== userId
+      (id) => id !== userId,
     );
     await unfollowedUser.save();
 
@@ -253,6 +254,14 @@ export const sendConnectionRequest = async (req, res) => {
       success: true,
       message: "Connection request sent successfully",
     });
+
+    // Trigger Inngest event to send connection reminder email
+    await inngest.send({
+      name: "app/connection-request",
+      data: {
+        connectionId: newConnection._id,
+      },
+    });
   } catch (error) {
     res.json({ success: false, message: error.message });
   }
@@ -264,7 +273,7 @@ export const getUserConnections = async (req, res) => {
     const { userId } = req.auth();
 
     const user = await User.findById(userId).populate(
-      "connections followers following"
+      "connections followers following",
     );
 
     const connections = user.connections;
@@ -327,7 +336,7 @@ export const acceptConnectionRequest = async (req, res) => {
 // Get other user profiles
 export const getUserProfile = async (req, res) => {
   try {
-    const {profileId} = req.body;
+    const { profileId } = req.body;
 
     const profile = await User.findById(profileId);
 
@@ -337,10 +346,14 @@ export const getUserProfile = async (req, res) => {
     }
 
     // Get user's posts
-    const profilePosts = await Post.find({ user: profileId }).populate('user');
+    const profilePosts = await Post.find({ user: profileId }).populate("user");
 
-    res.json({success: true, message: "User profile retrieved successfully", data: {profile, posts: profilePosts}});
+    res.json({
+      success: true,
+      message: "User profile retrieved successfully",
+      data: { profile, posts: profilePosts },
+    });
   } catch (error) {
     res.json({ success: false, message: error.message });
   }
-}
+};
