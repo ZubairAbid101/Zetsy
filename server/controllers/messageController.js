@@ -87,3 +87,32 @@ export const sendMessage = async (req, res) => {
     res.json({ success: false, message: error.message });
   }
 };
+
+// Get messages between two users
+export const getMessages = async (req, res) => {
+  try {
+    const { userId } = req.auth();
+    const { to_user_id } = req.body;
+
+    const messages = await Message.find({
+      $or: [
+        { from_user_id: userId, to_user_id },
+        { from_user_id: to_user_id, to_user_id: userId },
+      ],
+    }).sort({ createdAt: 1 });
+
+    // Mark messages as seen
+    await Message.updateMany(
+      { from_user_id: to_user_id, to_user_id: userId, seen: false },
+      { $set: { seen: true } },
+    );
+
+    res.json({
+      success: true,
+      message: "Messages retrieved successfully",
+      data: messages,
+    });
+  } catch (error) {
+    res.json({ success: false, message: error.message });
+  }
+};
