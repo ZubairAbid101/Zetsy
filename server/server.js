@@ -27,7 +27,7 @@ app.get("/", (req, res) => {
 app.use("/api/inngest", serve({ client: inngest, functions }));
 app.use("/api/user", userRouter);
 app.use("/api/posts", postRouter);
-app.user("/api/stories", storyRouter);
+app.use("/api/stories", storyRouter);
 
 // Start the server
 app.listen(process.env.PORT || 4000, () => {

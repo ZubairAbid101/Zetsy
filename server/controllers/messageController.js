@@ -1,3 +1,7 @@
+import fs from "fs";
+import imageKitClient from "../configs/imageKit.js";
+import Message from "../models/Message.js";
+
 // Store server side event connections
 const connections = {};
 
@@ -20,4 +24,66 @@ export const sseController = (req, res) => {
     delete connections[userId];
     console.log(`SSE connection closed for user: ${userId}`);
   });
+};
+
+// Send message
+export const sendMessage = async (req, res) => {
+  try {
+    const { userId } = req.auth();
+    const { to_user_id, message_text } = req.body;
+    const image = req.file;
+
+    let message_type = image ? "image" : "text";
+    let media_url = "";
+
+    if (message_type === "image") {
+      // Upload image to ImageKit
+      const buffer = fs.createReadStream(image.path);
+      const response = await imageKitClient.files.upload({
+        file: buffer,
+        fileName: image.originalname,
+        folder: "/zetsy/messages",
+      });
+
+      // Generate URL
+      const url = imageKitClient.helper.buildSrc({
+        urlEndpoint: process.env.IMAGE_KIT_URL_ENDPOINT,
+        src: response.url,
+        transformation: [
+          { quality: "auto" },
+          { format: "webp" },
+          { width: "1280" },
+        ],
+      });
+
+      media_url = url;
+    }
+
+    const message = Message.create({
+      from_user_id: userId,
+      to_user_id,
+      message_type,
+      message_text,
+      media_url,
+    });
+
+    res.json({
+      success: true,
+      message: "Message sent successfully",
+      data: message,
+    });
+
+    // Send SSE to recipient if connected
+    const messageWithUserData = await Message.findById(message._id).populate(
+      "from_user_id",
+    );
+
+    if (connections[to_user_id]) {
+      connections[to_user_id].write(
+        `data: ${JSON.stringify(messageWithUserData)}\n\n`,
+      );
+    }
+  } catch (error) {
+    res.json({ success: false, message: error.message });
+  }
 };
