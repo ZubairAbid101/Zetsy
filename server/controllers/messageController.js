@@ -116,3 +116,24 @@ export const getMessages = async (req, res) => {
     res.json({ success: false, message: error.message });
   }
 };
+
+// Get user recent messages
+export const getRecentMessages = async (req, res) => {
+  try {
+    const { userId } = req.auth();
+
+    const messages = await Message.find({
+      to_user_id: userId,
+    })
+      .populate("from_user_id to_user_id")
+      .sort({ createdAt: -1 });
+
+    res.json({
+      success: true,
+      message: "Recent messages retrieved successfully",
+      data: messages,
+    });
+  } catch (error) {
+    res.json({ success: false, message: error.message });
+  }
+};
