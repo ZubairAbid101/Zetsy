@@ -253,13 +253,13 @@ const sendUnseenMessagesNotification = inngest.createFunction(
         <p>Hi ${user.full_name},</p>
         <p>You have ${unseenCount[userId]} unseen messages. Please check your inbox.</p>
       `;
-    }
 
-    await sendEmail({
+      await sendEmail({
       to: user.email,
       subject,
       body,
     });
+    }
 
     return { success: true, message: "Unseen messages notifications sent" };
   },
