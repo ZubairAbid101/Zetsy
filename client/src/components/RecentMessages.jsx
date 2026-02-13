@@ -21,25 +21,38 @@ const RecentMessages = () => {
       });
 
       if (data.success) {
-        // Group messages by from_user_id to get the latest message from each user
+        // Group messages by from_user_id and count unseen messages
         const groupedMessages = data.data.reduce((account, message) => {
           const fromUserId = message.from_user_id._id;
 
-          if (
-            !account[fromUserId] ||
-            new Date(message.createdAt) >
-              new Date(account[fromUserId].createdAt)
-          ) {
-            account[fromUserId] = message;
+          if (!account[fromUserId]) {
+            account[fromUserId] = {
+              latestMessage: message,
+              unseenCount: message.seen ? 0 : 1,
+            };
+          } else {
+            // Update to latest message if this one is newer
+            if (new Date(message.createdAt) > new Date(account[fromUserId].latestMessage.createdAt)) {
+              account[fromUserId].latestMessage = message;
+            }
+            // Increment unseen count
+            if (!message.seen) {
+              account[fromUserId].unseenCount += 1;
+            }
           }
 
           return account;
         }, {});
 
         // Sort messages by createdAt descending
-        const sortedMessages = Object.values(groupedMessages).sort((a, b) => {
-          return new Date(b.createdAt) - new Date(a.createdAt);
-        });
+        const sortedMessages = Object.values(groupedMessages)
+          .map(({ latestMessage, unseenCount }) => ({
+            ...latestMessage,
+            unseenCount,
+          }))
+          .sort((a, b) => {
+            return new Date(b.createdAt) - new Date(a.createdAt);
+          });
 
         setMessages(sortedMessages);
       } else {
@@ -53,7 +66,7 @@ const RecentMessages = () => {
   useEffect(() => {
     if (user) {
       fetchRecentMessages();
-      setInterval(fetchRecentMessages, 60000); // Refresh every 60 seconds
+      setInterval(fetchRecentMessages, 2000); // Refresh every 60 seconds
       return () => clearInterval(fetchRecentMessages);
     }
   }, [user]);
@@ -106,11 +119,11 @@ const RecentMessages = () => {
                   <p
                     className={!isDarkMode ? "text-gray-400" : "text-gray-500"}
                   >
-                    {message.text ? message.text : "Media"}
+                    {message.message_text ? message.message_text : "Media"}
                   </p>
-                  {!message.seen && (
-                    <p className="bg-indigo-500 text-white w-4 h-4 flex items-center justify-center rounded-full text-[10px]">
-                      1
+                  {message.unseenCount > 0 && (
+                    <p className="bg-indigo-500 text-white min-w-4 h-4 px-1 flex items-center justify-center rounded-full text-[10px]">
+                      {message.unseenCount}
                     </p>
                   )}
                 </div>
