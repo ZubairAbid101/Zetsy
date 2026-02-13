@@ -9,7 +9,9 @@ export const addUserStory = async (req, res) => {
   try {
     const { userId } = req.auth();
     const { content, media_type, background_color } = req.body;
-    const media = req.files;
+    const media = req.file;
+
+    let url = ''
 
     // Upload media to ImageKit
     if (media_type == "image" || media_type == "video") {
@@ -21,10 +23,11 @@ export const addUserStory = async (req, res) => {
       });
 
       // Generate URL
-      const url = imageKitClient.helper.buildSrc({
+      url = imageKitClient.helper.buildSrc({
         urlEndpoint: process.env.IMAGE_KIT_URL_ENDPOINT,
         src: response.url,
       });
+    }
 
       // Store story in DB
       const newStory = await Story.create({
@@ -42,7 +45,6 @@ export const addUserStory = async (req, res) => {
         name: "app/story-delete",
         data: { storyId: newStory._id },
       });
-    }
   } catch (error) {
     res.json({ success: false, message: error.message });
   }

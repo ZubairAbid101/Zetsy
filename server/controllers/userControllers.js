@@ -68,6 +68,7 @@ export const updateUserData = async (req, res) => {
       const response = await imageKitClient.files.upload({
         file: buffer,
         fileName: profile.originalname,
+        folder: "/zetsy/users/profiles",
       });
 
       // Generate URL
@@ -92,6 +93,7 @@ export const updateUserData = async (req, res) => {
       const response = await imageKitClient.files.upload({
         file: buffer,
         fileName: cover.originalname,
+        folder: "/zetsy/users/covers",
       });
 
       // Generate URL
@@ -167,7 +169,7 @@ export const followUser = async (req, res) => {
     }
 
     user.following.push(followId);
-    await User.save();
+    await user.save();
 
     const followedUser = await User.findById(followId);
     followedUser.followers.push(userId);
@@ -280,11 +282,14 @@ export const getUserConnections = async (req, res) => {
     const followers = user.followers;
     const following = user.following;
 
-    const pendingConnections = (
-      await Connection.find({ to_user_id: userId, status: "pending" })
-    )
-      .populate("from_user_id")
-      .map((connection) => connection.from_user_id);
+    const pendingConnectionsData = await Connection.find({ 
+      to_user_id: userId, 
+      status: "pending" 
+    }).populate("from_user_id");
+    
+    const pendingConnections = pendingConnectionsData.map(
+      (connection) => connection.from_user_id
+    );
 
     res.json({
       success: true,
@@ -346,7 +351,9 @@ export const getUserProfile = async (req, res) => {
     }
 
     // Get user's posts
-    const profilePosts = await Post.find({ user: profileId }).populate("user");
+    const profilePosts = await Post.find({ user: profileId })
+      .populate("user")
+      .sort({ createdAt: -1 });
 
     res.json({
       success: true,

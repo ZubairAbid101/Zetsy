@@ -59,7 +59,7 @@ export const sendMessage = async (req, res) => {
       media_url = url;
     }
 
-    const message = Message.create({
+    const message = await Message.create({
       from_user_id: userId,
       to_user_id,
       message_type,
