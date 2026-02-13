@@ -45,18 +45,20 @@ const App = () => {
       const eventSource = new EventSource(
         import.meta.env.VITE_BACKEND_URL + "/api/messages/" + user.id,
       );
+
       eventSource.onmessage = (event) => {
         const message = JSON.parse(event.data);
 
-        if (pathnameRef.current === `/messages/${message.from_user_id._id}`) {
-          dispatch(addMessage(message));
-        } else {
+        // Only show notification if NOT on the specific user's chat page
+        if (pathnameRef.current !== `/messages/${message.from_user_id._id}`) {
           toast.custom(
-            (t) => {
-              <Notification t={t} message={message} />;
-            },
-            { position: "bottom-right" },
+            (t) => <Notification t={t} message={message} />,
+            { position: "bottom-right", duration: 5000 }
           );
+        }
+        // If we're on a different chat page, still add the message to trigger a refresh
+        else {
+          dispatch(addMessage(message));
         }
       };
 

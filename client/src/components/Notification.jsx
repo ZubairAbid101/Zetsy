@@ -7,7 +7,9 @@ const Notification = ({ t, message }) => {
 
   return (
     <div
-      className={`max-w-md w-full bg-white shadow-lg rounded-lg flex border border-gray-300 hover:scale-105 transition`}
+      className={`max-w-md w-full bg-white shadow-lg rounded-lg flex border border-gray-300 hover:scale-105 transition ${
+        t.visible ? 'animate-enter' : 'animate-leave'
+      }`}
     >
       <div className="flex-1 p-4">
         <div className="flex items-start">
@@ -23,7 +25,9 @@ const Notification = ({ t, message }) => {
             </p>
 
             <p className="text-sm text-gray-500">
-              {message.message_text.slice(0, 50)}
+              {message.message_text 
+                ? message.message_text.slice(0, 50) 
+                : "Sent an image"}
             </p>
           </div>
         </div>
@@ -35,7 +39,7 @@ const Notification = ({ t, message }) => {
             navigate(`/messages/${message.from_user_id._id}`);
             toast.dismiss(t.id);
           }}
-          className="p-4 text-indigo-600 font-semibold"
+          className="p-4 text-indigo-600 font-semibold hover:bg-gray-50 transition cursor-pointer"
         >
           Reply
         </button>
