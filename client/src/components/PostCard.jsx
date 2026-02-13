@@ -2,28 +2,60 @@ import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { BadgeCheck, Heart, MessageCircle, Share2 } from "lucide-react";
 import moment from "moment";
+import { useSelector } from "react-redux";
 import { dummyUserData } from "../assets/assets.js";
 import { useTheme } from "../context/AppContext";
+import { useAuth } from "@clerk/clerk-react";
+import api from "../api/axios.js";
+import toast from "react-hot-toast";
 
 const PostCard = ({ post }) => {
   const { isDarkMode } = useTheme();
 
   const postWithHashTags = post.content.replace(
     /(#\w+)/g,
-    `<span class="${!isDarkMode ? 'text-indigo-400' : 'text-indigo-600'} cursor-pointer">$1</span>`
+    `<span class="${!isDarkMode ? "text-indigo-400" : "text-indigo-600"} cursor-pointer">$1</span>`,
   );
 
   const navigate = useNavigate();
 
-  const currentUser = dummyUserData;
-  const [likes, setLikes] = useState(post.likes_count);
+  const currentUser = useSelector((state) => state.user.value);
+  const [likes, setLikes] = useState(post.likes);
 
-  const handleLike = async () => {};
+  const { getToken } = useAuth();
+
+  const handleLike = async () => {
+    try {
+      const token = await getToken();
+      const { data } = await api.post(
+        "/api/posts/like",
+        { postId: post._id },
+        { headers: { Authorization: token } },
+      );
+
+      if (data.success) {
+        toast.success(data.message);
+        setLikes((prev) => {
+          if (prev.includes(currentUser._id)) {
+            return prev.filter((id) => id !== currentUser._id);
+          } else {
+            return [...prev, currentUser._id];
+          }
+        });
+      } else {
+        toast.error(data.message);
+      }
+    } catch (error) {
+      toast.error(error.message);
+    }
+  };
 
   return (
-    <div className={`rounded-xl shadow p-4 space-y-4 w-full max-w-2xl ${
-      !isDarkMode ? "bg-gray-800" : "bg-white"
-    }`}>
+    <div
+      className={`rounded-xl shadow p-4 space-y-4 w-full max-w-2xl ${
+        !isDarkMode ? "bg-gray-800" : "bg-white"
+      }`}
+    >
       {/* User Info */}
       <div
         onClick={() => navigate(`/profile/${post.user._id}`)}
@@ -37,13 +69,17 @@ const PostCard = ({ post }) => {
 
         <div>
           <div className="flex items-center space-x-1">
-            <span className={!isDarkMode ? "text-gray-100" : "text-gray-900"}>{post.user.full_name}</span>
+            <span className={!isDarkMode ? "text-gray-100" : "text-gray-900"}>
+              {post.user.full_name}
+            </span>
             <BadgeCheck className="w-4 h-4 text-blue-500" />
           </div>
 
-          <div className={`text-sm ${
-            !isDarkMode ? "text-gray-400" : "text-gray-500"
-          }`}>
+          <div
+            className={`text-sm ${
+              !isDarkMode ? "text-gray-400" : "text-gray-500"
+            }`}
+          >
             @{post.user.username} - {moment(post.createdAt).fromNow()}
           </div>
         </div>
@@ -76,11 +112,13 @@ const PostCard = ({ post }) => {
       </div>
 
       {/* Actions */}
-      <div className={`flex items-center gap-4 text-sm pt-2 border-t ${
-        !isDarkMode 
-          ? "text-gray-400 border-gray-700" 
-          : "text-gray-600 border-gray-300"
-      }`}>
+      <div
+        className={`flex items-center gap-4 text-sm pt-2 border-t ${
+          !isDarkMode
+            ? "text-gray-400 border-gray-700"
+            : "text-gray-600 border-gray-300"
+        }`}
+      >
         {/* Like Button */}
         <div className="flex items-center gap-1">
           <Heart

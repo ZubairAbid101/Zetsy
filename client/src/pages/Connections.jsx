@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   Users,
@@ -14,49 +14,107 @@ import {
   dummyPendingConnectionsData,
 } from "../assets/assets.js";
 import { useTheme } from "../context/AppContext";
+import { useSelector, useDispatch } from "react-redux";
+import { useAuth } from "@clerk/clerk-react";
+import { fetchConnections } from "../features/connections/connectionsSlice.js";
+import api from "../api/axios.js";
+import toast from "react-hot-toast";
 
 const Connections = () => {
   const { isDarkMode } = useTheme();
   const navigate = useNavigate();
 
   const [currentTab, setCurrentTab] = useState("Followers");
+  const { getToken } = useAuth();
+  const dispatch = useDispatch();
+  const { connections, pendingConnections, followers, following } = useSelector(
+    (state) => state.connections,
+  );
 
   const dataArray = [
     {
       label: "Followers",
-      value: dummyFollowersData,
+      value: followers,
       icon: Users,
     },
 
     {
       label: "Following",
-      value: dummyFollowingData,
+      value: following,
       icon: UserCheck,
     },
 
     {
       label: "Pending",
-      value: dummyPendingConnectionsData,
+      value: pendingConnections,
       icon: UserRoundPen,
     },
 
     {
       label: "Connections",
-      value: dummyConnectionsData,
+      value: connections,
       icon: UserPlus,
     },
   ];
 
+  const handleUnfollow = async (userId) => {
+    try {
+      const token = await getToken();
+      const { data } = await api.post(
+        "/api/user/unfollow",
+        { unfollowId: userId },
+        { headers: { Authorization: token } },
+      );
+
+      if (data.success) {
+        toast.success(data.message);
+        dispatch(fetchConnections(token));
+      } else {
+        toast.error(data.message);
+      }
+    } catch (error) {
+      toast.error(error.message);
+    }
+  };
+
+  const handleFollow = async (userId) => {
+    try {
+      const token = await getToken();
+      const { data } = await api.post(
+        "/api/user/accept",
+        { connectionFromUserId: userId },
+        { headers: { Authorization: token } },
+      );
+
+      if (data.success) {
+        toast.success(data.message);
+        dispatch(fetchConnections(token));
+      } else {
+        toast.error(data.message);
+      }
+    } catch (error) {
+      toast.error(error.message);
+    }
+  };
+
+  useEffect(() => {
+    getToken().then((token) => {
+      dispatch(fetchConnections(token));
+    });
+  }, []);
+
   return (
-    <div className={`min-h-screen ${
-      !isDarkMode ? "bg-gray-900" : "bg-slate-50"
-    }`}>
+    <div
+      className={`min-h-screen ${!isDarkMode ? "bg-gray-900" : "bg-slate-50"}`}
+    >
       <div className="max-w-6xl mx-auto p-6">
         {/* Title */}
         <div className="mb-8">
-          <h1 className={`text-3xl font-bold mb-2 ${
-            !isDarkMode ? "text-gray-100" : "text-slate-900"
-          }`}>
+          <h1
+            className={`text-3xl font-bold mb-2 ${
+              !isDarkMode ? "text-gray-100" : "text-slate-900"
+            }`}
+          >
             Connections
           </h1>
           <p className={!isDarkMode ? "text-gray-400" : "text-slate-600"}>
@@ -71,8 +129,8 @@ const Connections = () => {
               <div
                 key={index}
                 className={`flex flex-col items-center justify-center gap-1 border h-20 w-25 sm:w-40 shadow rounded-md ${
-                  !isDarkMode 
-                    ? "border-gray-700 bg-gray-800 text-gray-100" 
+                  !isDarkMode
+                    ? "border-gray-700 bg-gray-800 text-gray-100"
                     : "border-gray-200 bg-white text-slate-900"
                 }`}
               >
@@ -86,11 +144,13 @@ const Connections = () => {
         </div>
 
         {/* Tabs */}
-        <div className={`inline-flex flex-wrap items-center justify-center border rounded-md p-1 shadow-sm ${
-          !isDarkMode 
-            ? "border-gray-700 bg-gray-800" 
-            : "border-gray-200 bg-white"
-        }`}>
+        <div
+          className={`inline-flex flex-wrap items-center justify-center border rounded-md p-1 shadow-sm ${
+            !isDarkMode
+              ? "border-gray-700 bg-gray-800"
+              : "border-gray-200 bg-white"
+          }`}
+        >
           {dataArray.map((tab) => {
             return (
               <button
@@ -98,22 +158,24 @@ const Connections = () => {
                 onClick={() => setCurrentTab(tab.label)}
                 className={`flex items-center px-3 py-1 text-sm rounded-md transition-colors ${
                   currentTab === tab.label
-                    ? !isDarkMode 
-                      ? "bg-gray-700 font-medium text-gray-100" 
+                    ? !isDarkMode
+                      ? "bg-gray-700 font-medium text-gray-100"
                       : "bg-white font-medium text-black"
-                    : !isDarkMode 
-                      ? "text-gray-400 hover:text-gray-100" 
+                    : !isDarkMode
+                      ? "text-gray-400 hover:text-gray-100"
                       : "text-gray-500 hover:text-black"
                 }`}
               >
                 <tab.icon className="w-4 h-4" />
                 <span className="ml-1">{tab.label}</span>
                 {tab.count !== undefined && (
-                  <span className={`ml-2 text-xs px-2 py-0.5 rounded-full ${
-                    !isDarkMode 
-                      ? "bg-gray-700 text-gray-300" 
-                      : "bg-gray-100 text-gray-700"
-                  }`}>
+                  <span
+                    className={`ml-2 text-xs px-2 py-0.5 rounded-full ${
+                      !isDarkMode
+                        ? "bg-gray-700 text-gray-300"
+                        : "bg-gray-100 text-gray-700"
+                    }`}
+                  >
                     {tab.count}
                   </span>
                 )}
@@ -141,17 +203,25 @@ const Connections = () => {
                     className="rounded-full w-12 h-12 shadow-md mx-auto"
                   />
                   <div className="flex-1">
-                    <p className={`font-medium ${
-                      !isDarkMode ? "text-gray-200" : "text-slate-700"
-                    }`}>
+                    <p
+                      className={`font-medium ${
+                        !isDarkMode ? "text-gray-200" : "text-slate-700"
+                      }`}
+                    >
                       {user.full_name}
                     </p>
-                    <p className={!isDarkMode ? "text-gray-400" : "text-slate-500"}>
+                    <p
+                      className={
+                        !isDarkMode ? "text-gray-400" : "text-slate-500"
+                      }
+                    >
                       @{user.username}
                     </p>
-                    <p className={`text-sm ${
-                      !isDarkMode ? "text-gray-500" : "text-gray-600"
-                    }`}>
+                    <p
+                      className={`text-sm ${
+                        !isDarkMode ? "text-gray-500" : "text-gray-600"
+                      }`}
+                    >
                       {user.bio.slice(0, 30)}...
                     </p>
 
@@ -167,21 +237,27 @@ const Connections = () => {
                       }
 
                       {currentTab == "Following" && (
-                        <button className={`w-full p-2 text-sm rounded active:scale-95 transition cursor-pointer ${
-                          !isDarkMode 
-                            ? "bg-gray-700 hover:bg-gray-600 text-gray-200" 
-                            : "bg-slate-100 hover:bg-slate-200 text-black"
-                        }`}>
+                        <button
+                          onClick={() => handleUnfollow(user._id)}
+                          className={`w-full p-2 text-sm rounded active:scale-95 transition cursor-pointer ${
+                            !isDarkMode
+                              ? "bg-gray-700 hover:bg-gray-600 text-gray-200"
+                              : "bg-slate-100 hover:bg-slate-200 text-black"
+                          }`}
+                        >
                           Unfollow
                         </button>
                       )}
 
                       {currentTab == "Pending" && (
-                        <button className={`w-full p-2 text-sm rounded active:scale-95 transition cursor-pointer ${
-                          !isDarkMode 
-                            ? "bg-gray-700 hover:bg-gray-600 text-gray-200" 
-                            : "bg-slate-100 hover:bg-slate-200 text-black"
-                        }`}>
+                        <button
+                          onClick={() => handleFollow(user._id)}
+                          className={`w-full p-2 text-sm rounded active:scale-95 transition cursor-pointer ${
+                            !isDarkMode
+                              ? "bg-gray-700 hover:bg-gray-600 text-gray-200"
+                              : "bg-slate-100 hover:bg-slate-200 text-black"
+                          }`}
+                        >
                           Accept
                         </button>
                       )}
@@ -190,8 +266,8 @@ const Connections = () => {
                         <button
                           onClick={() => navigate(`/messages/${user._id}`)}
                           className={`w-full p-2 text-sm rounded active:scale-95 transition cursor-pointer flex items-center justify-center gap-1 ${
-                            !isDarkMode 
-                              ? "bg-gray-700 hover:bg-gray-600 text-gray-200" 
+                            !isDarkMode
+                              ? "bg-gray-700 hover:bg-gray-600 text-gray-200"
                               : "bg-slate-100 hover:bg-slate-200 text-slate-800"
                           }`}
                         >

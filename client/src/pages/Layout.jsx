@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { Outlet } from "react-router-dom";
 import { Menu, X } from "lucide-react";
+import {useSelector} from "react-redux";
 import { dummyUserData } from "../assets/assets.js";
 import Sidebar from "../components/Sidebar";
 import Loading from "../components/Loading";
@@ -8,7 +9,7 @@ import { useTheme } from "../context/AppContext.jsx";
 
 const Layout = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const user = dummyUserData;
+  const user = useSelector((state) => state.user.value);
   const { isDarkMode } = useTheme();
   
   return user ? (

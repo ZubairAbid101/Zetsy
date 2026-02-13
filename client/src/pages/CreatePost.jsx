@@ -1,8 +1,12 @@
 import React, { useState } from "react";
 import { Image, X } from "lucide-react";
 import toast from "react-hot-toast";
+import { useSelector } from "react-redux";
 import { dummyUserData } from "../assets/assets.js";
 import { useTheme } from "../context/AppContext";
+import { useAuth } from "@clerk/clerk-react";
+import api from "../api/axios.js";
+import { useNavigate } from "react-router-dom";
 
 const CreatePost = () => {
   const { isDarkMode } = useTheme();
@@ -10,22 +14,64 @@ const CreatePost = () => {
   const [images, setImages] = useState([]);
   const [loading, setLoading] = useState(false);
 
-  const user = dummyUserData;
+  const navigate = useNavigate();
+  const user = useSelector((state) => state.user.value);
+  const { getToken } = useAuth();
 
-  const handleSubmit = async () => {};
+  const handleSubmit = async () => {
+    if (!images.length && !content) {
+      toast.error("Post cannot be empty");
+    }
+
+    setLoading(true);
+    const postType =
+      images.length && content
+        ? "text_with_image"
+        : images.length
+          ? "image"
+          : "text";
+
+    try {
+      const formData = new FormData();
+      formData.append("content", content);
+      formData.append("post_type", postType);
+      images.map((image) => {
+        formData.append("images", image);
+      });
+
+      const token = await getToken();
+      const { data } = await api.post("/api/posts/add", formData, {
+        headers: { Authorization: token },
+      });
+
+      if (data.success) {
+        navigate("/");
+      } else {
+        throw new Error(data.message);
+      }
+    } catch (error) {
+      toast.error(error.message);
+    }
+
+    setLoading(false);
+  };
 
   return (
-    <div className={`min-h-screen ${
-      !isDarkMode 
-        ? "bg-gradient-to-b from-gray-900 to-gray-800" 
-        : "bg-gradient-to-b from-slate-50 to-white"
-    }`}>
+    <div
+      className={`min-h-screen ${
+        !isDarkMode
+          ? "bg-gradient-to-b from-gray-900 to-gray-800"
+          : "bg-gradient-to-b from-slate-50 to-white"
+      }`}
+    >
       <div className="max-w-6xl mx-auto p-6">
         {/* Title */}
         <div className="mb-8">
-          <h1 className={`text-3xl font-bold mb-2 ${
-            !isDarkMode ? "text-gray-100" : "text-slate-900"
-          }`}>
+          <h1
+            className={`text-3xl font-bold mb-2 ${
+              !isDarkMode ? "text-gray-100" : "text-slate-900"
+            }`}
+          >
             Create Post
           </h1>
           <p className={!isDarkMode ? "text-gray-400" : "text-slate-600"}>
@@ -34,9 +80,11 @@ const CreatePost = () => {
         </div>
 
         {/* Form */}
-        <div className={`max-w-xl p-4 sm:p-8 sm:pb-3 rounded-xl shadow-md space-y-4 ${
-          !isDarkMode ? "bg-gray-800" : "bg-white"
-        }`}>
+        <div
+          className={`max-w-xl p-4 sm:p-8 sm:pb-3 rounded-xl shadow-md space-y-4 ${
+            !isDarkMode ? "bg-gray-800" : "bg-white"
+          }`}
+        >
           {/* Header */}
           <div className="flex items-center gap-3">
             <img
@@ -45,14 +93,18 @@ const CreatePost = () => {
               className="w-12 h-12 rounded-full shadow"
             />
             <div>
-              <h2 className={`font-semibold ${
-                !isDarkMode ? "text-gray-100" : "text-gray-900"
-              }`}>
+              <h2
+                className={`font-semibold ${
+                  !isDarkMode ? "text-gray-100" : "text-gray-900"
+                }`}
+              >
                 {user.full_name}
               </h2>
-              <p className={`text-sm ${
-                !isDarkMode ? "text-gray-400" : "text-gray-500"
-              }`}>
+              <p
+                className={`text-sm ${
+                  !isDarkMode ? "text-gray-400" : "text-gray-500"
+                }`}
+              >
                 @{user.username}
               </p>
             </div>
@@ -64,8 +116,8 @@ const CreatePost = () => {
             rows={20}
             value={content}
             className={`w-full resize-none max-h-20 mt-4 text-sm outline-none ${
-              !isDarkMode 
-                ? "bg-gray-800 text-gray-100 placeholder-gray-500" 
+              !isDarkMode
+                ? "bg-gray-800 text-gray-100 placeholder-gray-500"
                 : "bg-white text-gray-900 placeholder-gray-400"
             }`}
             placeholder="What's on your mind?"
@@ -97,14 +149,16 @@ const CreatePost = () => {
           )}
 
           {/* Actions */}
-          <div className={`flex items-center justify-between pt-3 border-t ${
-            !isDarkMode ? "border-gray-700" : "border-gray-300"
-          }`}>
+          <div
+            className={`flex items-center justify-between pt-3 border-t ${
+              !isDarkMode ? "border-gray-700" : "border-gray-300"
+            }`}
+          >
             <label
               htmlFor="images"
               className={`flex items-center gap-2 text-sm transition cursor-pointer ${
-                !isDarkMode 
-                  ? "text-gray-400 hover:text-gray-200" 
+                !isDarkMode
+                  ? "text-gray-400 hover:text-gray-200"
                   : "text-gray-500 hover:text-gray-700"
               }`}
             >

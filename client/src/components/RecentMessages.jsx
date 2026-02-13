@@ -3,18 +3,60 @@ import { Link } from "react-router-dom";
 import moment from "moment";
 import { dummyRecentMessagesData } from "../assets/assets.js";
 import { useTheme } from "../context/AppContext";
+import { useAuth, useUser } from "@clerk/clerk-react";
+import api from "../api/axios.js";
+import toast from "react-hot-toast";
 
 const RecentMessages = () => {
   const { isDarkMode } = useTheme();
   const [messages, setMessages] = useState([]);
+  const { user } = useUser();
+  const { getToken } = useAuth();
 
   const fetchRecentMessages = async () => {
-    setMessages(dummyRecentMessagesData);
+    try {
+      const token = await getToken();
+      const { data } = await api.get("/api/user/recent-messages", {
+        headers: { Authorization: token },
+      });
+
+      if (data.success) {
+        // Group messages by from_user_id to get the latest message from each user
+        const groupedMessages = data.data.reduce((account, message) => {
+          const fromUserId = message.from_user_id._id;
+
+          if (
+            !account[fromUserId] ||
+            new Date(message.createdAt) >
+              new Date(account[fromUserId].createdAt)
+          ) {
+            account[fromUserId] = message;
+          }
+
+          return account;
+        }, {});
+
+        // Sort messages by createdAt descending
+        const sortedMessages = Object.values(groupedMessages).sort((a, b) => {
+          return new Date(b.createdAt) - new Date(a.createdAt);
+        });
+
+        setMessages(sortedMessages);
+      } else {
+        toast.error(data.message);
+      }
+    } catch (error) {
+      toast.error(error.message);
+    }
   };
 
   useEffect(() => {
-    fetchRecentMessages();
-  }, []);
+    if (user) {
+      fetchRecentMessages();
+      setInterval(fetchRecentMessages, 60000); // Refresh every 60 seconds
+      return () => clearInterval(fetchRecentMessages);
+    }
+  }, [user]);
 
   return (
     <div
@@ -48,7 +90,9 @@ const RecentMessages = () => {
 
               <div className="w-full">
                 <div className="flex justify-between">
-                  <p className="font-medium">{message.from_user_id.full_name}</p>
+                  <p className="font-medium">
+                    {message.from_user_id.full_name}
+                  </p>
                   <p
                     className={`text-[10px] ${
                       !isDarkMode ? "text-gray-400" : "text-slate-400"
@@ -59,7 +103,9 @@ const RecentMessages = () => {
                 </div>
 
                 <div className="flex justify-between">
-                  <p className={!isDarkMode ? "text-gray-400" : "text-gray-500"}>
+                  <p
+                    className={!isDarkMode ? "text-gray-400" : "text-gray-500"}
+                  >
                     {message.text ? message.text : "Media"}
                   </p>
                   {!message.seen && (

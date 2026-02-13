@@ -5,6 +5,9 @@ import StoriesBar from "../components/StoriesBar";
 import PostCard from "../components/PostCard";
 import RecentMessages from "../components/RecentMessages";
 import { useTheme } from "../context/AppContext";
+import { useAuth } from "@clerk/clerk-react";
+import api from "../api/axios.js";
+import toast from "react-hot-toast";
 
 const Feed = () => {
   const { isDarkMode } = useTheme();
@@ -12,8 +15,25 @@ const Feed = () => {
   const [feeds, setFeeds] = useState([]);
   const [loading, setLoading] = useState(true);
 
+  const { getToken } = useAuth();
+
   const fetchFeeds = async () => {
-    setFeeds(dummyPostsData);
+    try {
+      setLoading(true);
+      const token = await getToken();
+      const { data } = await api.get("api/posts/feed", {
+        headers: { Authorization: token },
+      });
+
+      if (data.success) {
+        setFeeds(data.posts);
+      } else {
+        toast.error(data.message);
+      }
+    } catch (error) {
+      toast.error(error.message);
+    }
+
     setLoading(false);
   };
 

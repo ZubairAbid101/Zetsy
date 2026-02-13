@@ -5,6 +5,9 @@ import { dummyStoriesData } from "../assets/assets.js";
 import StoryModel from "./StoryModel";
 import StoryViewer from "./StoryViewer";
 import { useTheme } from "../context/AppContext";
+import { useAuth } from "@clerk/clerk-react";
+import api from "../api/axios.js";
+import toast from "react-hot-toast";
 
 const StoriesBar = () => {
   const { isDarkMode } = useTheme();
@@ -13,8 +16,23 @@ const StoriesBar = () => {
   const [showModel, setShowModel] = useState(false);
   const [viewStory, setViewStory] = useState(null);
 
+  const { getToken } = useAuth();
+
   const fetchStories = async () => {
-    setStories(dummyStoriesData);
+    try {
+      const token = await getToken();
+      const { data } = await api.get("/api/stories/get", {
+        headers: { Authorization: token },
+      });
+
+      if (data.success) {
+        setStories(data.stories);
+      } else {
+        toast.error(data.message);
+      }
+    } catch (error) {
+      toast.error(error.message);
+    }
   };
 
   useEffect(() => {

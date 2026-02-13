@@ -3,13 +3,14 @@ import { Link, useNavigate } from "react-router-dom";
 import { CirclePlus, LogOut } from "lucide-react";
 import { useTheme } from '../context/AppContext';
 import { UserButton, useClerk } from "@clerk/clerk-react";
+import {useSelector} from 'react-redux';
 import { assets, dummyUserData } from "../assets/assets.js";
 import MenuItems from "./MenuItems";
 import ThemeToggle from "./ThemeToggle.jsx";
 
 const Sidebar = ({ sidebarOpen, setSidebarOpen }) => {
   const navigate = useNavigate();
-  const user = dummyUserData;
+  const user = useSelector((state) => state.user.value);
   const { signOut } = useClerk();
   const {isDarkMode} = useTheme();
 

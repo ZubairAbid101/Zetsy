@@ -1,6 +1,8 @@
 import React, { useState } from "react";
 import { ArrowLeft, Sparkle, TextIcon, Upload } from "lucide-react";
 import toast from "react-hot-toast";
+import { useAuth } from "@clerk/clerk-react";
+import api from "../api/axios";
 
 const StoryModel = ({ setShowModel, fetchStories }) => {
   const bgColors = [
@@ -18,18 +20,92 @@ const StoryModel = ({ setShowModel, fetchStories }) => {
   const [previewUrl, setPreviewUrl] = useState(null);
   const [background, setBackground] = useState(bgColors[0]);
 
+  const { getToken } = useAuth();
+  const MAX_VIDEO_DURATION = 60; // in seconds
+  const MAX_VIDEO_SIZE = 50; // 50 MB
+
   const handleMediaUpload = (e) => {
     const file = e.target.files[0];
 
     if (file) {
-      setMedia(file);
-      setPreviewUrl(URL.createObjectURL(file));
-    }
+      if (file.type.startsWith("video")) {
+        if (file.size / (1024 * 1024) > MAX_VIDEO_SIZE) {
+          toast.error("Video size exceeds 50 MB limit.");
+          setMedia(null);
+          setPreviewUrl(null);
+          e.target.value = "";
+          return;
+        }
 
+        const videoElement = document.createElement("video");
+        videoElement.preload = "metadata";
+        videoElement.onloadedmetadata = () => {
+          window.URL.revokeObjectURL(videoElement.src);
+
+          if (videoElement.duration > MAX_VIDEO_DURATION) {
+            toast.error("Video duration exceeds 60 seconds limit.");
+            setMedia(null);
+            setPreviewUrl(null);
+            e.target.value = "";
+            return;
+          } else {
+            setMedia(file);
+            setPreviewUrl(URL.createObjectURL(file));
+            setText("");
+            setMode("media");
+          }
+        };
+        videoElement.src = URL.createObjectURL(file);
+      } else if (file.type.startsWith("image")) {
+        setMedia(file);
+        setPreviewUrl(URL.createObjectURL(file));
+        setText("");
+        setMode("media");
+      }
+    }
     e.target.value = "";
   };
 
-  const handleCreateStory = async () => {};
+  const handleCreateStory = async () => {
+    const media_type =
+      mode === "media"
+        ? media?.type.startsWith("image")
+          ? "image"
+          : "video"
+        : "text";
+
+    if (media_type === "text" && !text) {
+      toast.error("Please enter some text for your story.");
+      throw new Error("Please enter some text for your story.");
+    }
+
+    let formData = new FormData();
+    formData.append("content", text);
+    formData.append("media_type", media_type);
+    formData.append("background_color", background);
+
+    if (media) {
+      formData.append("media", media);
+    }
+
+    const token = await getToken();
+
+    try {
+      const { data } = await api.post("/api/stories/create", formData, {
+        headers: { Authorization: token },
+      });
+
+      if (data.success) {
+        setShowModel(false);
+        toast.success(data.message);
+        fetchStories();
+      } else {
+        toast.error(data.message);
+      }
+    } catch (error) {
+      toast.error(error.message);
+    }
+  };
 
   return (
     <div className="fixed inset-0 z-110 min-h-screen bg-black/80 backdrop-blur text-white flex items-center justify-center p-4">
@@ -69,7 +145,14 @@ const StoryModel = ({ setShowModel, fetchStories }) => {
                 className="object-contain max-h-full"
               />
             ) : (
-              <video src={previewUrl} className="object-contain max-h-full" />
+              <video
+                src={previewUrl}
+                controls
+                autoPlay
+                muted
+                loop
+                className="object-contain max-h-full"
+              />
             ))}
         </div>
 
@@ -111,10 +194,7 @@ const StoryModel = ({ setShowModel, fetchStories }) => {
             }`}
           >
             <input
-              onChange={(e) => {
-                handleMediaUpload(e);
-                setMode("media");
-              }}
+              onChange={handleMediaUpload}
               type="file"
               accept="image/*, video/*"
               className="hidden"
@@ -129,8 +209,6 @@ const StoryModel = ({ setShowModel, fetchStories }) => {
           onClick={() =>
             toast.promise(handleCreateStory(), {
               loading: "Creating Story...",
-              success: "Story Created!",
-              error: "Failed to Create Story.",
             })
           }
           className="flex items-center justify-center gap-2 text-white py-3 mt-4 w-full rounded bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 active:scale-95 transition cursor-pointer"

@@ -1,12 +1,16 @@
 import React, { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import moment from "moment";
+import { useAuth } from "@clerk/clerk-react";
+import { useSelector } from "react-redux";
 import { dummyPostsData, dummyUserData } from "../assets/assets.js";
 import Loading from "../components/Loading";
 import UserProfileInfo from "../components/UserProfileInfo";
 import PostCard from "../components/PostCard";
 import ProfileModel from "../components/ProfileModel";
 import { useTheme } from "../context/AppContext";
+import toast from "react-hot-toast";
+import api from "../api/axios.js";
 
 const Profile = () => {
   const { isDarkMode } = useTheme();
@@ -16,24 +20,51 @@ const Profile = () => {
   const [activeTab, setActiveTab] = useState("posts");
   const [showEdit, setShowEdit] = useState(false);
 
-  const fetchUser = async () => {
-    setUser(dummyUserData);
-    setPosts(dummyPostsData);
+  const { getToken } = useAuth();
+  const currentUser = useSelector((state) => state.user.value);
+
+  const fetchUser = async (profileId) => {
+    const token = await getToken();
+
+    try {
+      const { data } = await api.post(
+        "/api/user/profile",
+        { profileId },
+        { headers: { Authorization: token } },
+      );
+
+      if (data.success) {
+        setUser(data.data.profile);
+        setPosts(data.data.posts);
+      } else {
+        toast.error(data.message);
+      }
+    } catch (error) {
+      toast.error(error.message);
+    }
   };
 
   useEffect(() => {
-    fetchUser();
-  }, []);
+    if (profileId) {
+      fetchUser(profileId);
+    } else {
+      fetchUser(currentUser._id);
+    }
+  }, [profileId, currentUser]);
 
   return user ? (
-    <div className={`relative h-full overflow-y-scroll p-6 ${
-      !isDarkMode ? "bg-gray-900" : "bg-gray-50"
-    }`}>
+    <div
+      className={`relative h-full overflow-y-scroll p-6 ${
+        !isDarkMode ? "bg-gray-900" : "bg-gray-50"
+      }`}
+    >
       <div className="max-w-3xl mx-auto">
         {/* Profile Card */}
-        <div className={`rounded-2xl shadow overflow-hidden ${
-          !isDarkMode ? "bg-gray-800" : "bg-white"
-        }`}>
+        <div
+          className={`rounded-2xl shadow overflow-hidden ${
+            !isDarkMode ? "bg-gray-800" : "bg-white"
+          }`}
+        >
           {/* Cover Photo */}
           <div className="h-40 md:h-56 bg-gradient-to-r from-indigo-200 via-purple-200 to-pink-200">
             {user.cover_photo && (
@@ -56,9 +87,11 @@ const Profile = () => {
 
         {/* Tabs */}
         <div className="mt-6">
-          <div className={`rounded-xl shadow p-1 flex max-w-md mx-auto ${
-            !isDarkMode ? "bg-gray-800" : "bg-white"
-          }`}>
+          <div
+            className={`rounded-xl shadow p-1 flex max-w-md mx-auto ${
+              !isDarkMode ? "bg-gray-800" : "bg-white"
+            }`}
+          >
             {["posts", "media", "likes"].map((tab) => {
               return (
                 <button
@@ -67,8 +100,8 @@ const Profile = () => {
                   className={`flex-1 px-4 py-2 text-sm font-medium rounded-lg transition-colors cursor-pointer ${
                     activeTab === tab
                       ? "bg-indigo-600 text-white"
-                      : !isDarkMode 
-                        ? "text-gray-400 hover:text-gray-100" 
+                      : !isDarkMode
+                        ? "text-gray-400 hover:text-gray-100"
                         : "text-gray-600 hover:text-gray-900"
                   }`}
                 >
@@ -124,7 +157,7 @@ const Profile = () => {
       </div>
 
       {/* Edit Profile Modal */}
-      {showEdit && <ProfileModel setShowEdit={setShowEdit}/>}
+      {showEdit && <ProfileModel setShowEdit={setShowEdit} />}
     </div>
   ) : (
     <Loading />

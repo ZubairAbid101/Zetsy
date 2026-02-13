@@ -2,25 +2,89 @@ import React, { useEffect, useRef, useState } from "react";
 import { ImageIcon, SendHorizontal } from "lucide-react";
 import { dummyMessagesData, dummyUserData } from "../assets/assets.js";
 import { useTheme } from "../context/AppContext";
+import { useDispatch, useSelector } from "react-redux";
+import { useParams } from "react-router-dom";
+import { useAuth } from "@clerk/clerk-react";
+import api from "../api/axios.js";
+import {
+  addMessage,
+  fetchMessages,
+  resetMessages,
+} from "../features/messages/messagesSlice.js";
+import toast from "react-hot-toast";
 
 const ChatBox = () => {
   const { isDarkMode } = useTheme();
-  const messages = dummyMessagesData;
+  const {messages} = useSelector((state) => state.messages);
+  const { userId } = useParams();
   const [text, setText] = useState("");
   const [image, setImage] = useState(null);
-  const [user, setUser] = useState(dummyUserData);
+  const [user, setUser] = useState(null);
   const chatContainerRef = useRef(null);
 
-  const sendMessage = async () => {};
+  const { getToken } = useAuth();
+  const dispatch = useDispatch();
+
+  const connections = useSelector((state) => state.connections.connections);
+
+  const sendMessage = async () => {
+    try {
+      if (!text && !image) return;
+
+      const token = await getToken();
+
+      const formData = new FormData();
+      formData.append("to_user_id", userId);
+      formData.append("message_text", text);
+      image && formData.append("image", image);
+
+      const { data } = await api.post("/api/messages/send", formData, {
+        headers: { Authorization: token },
+      });
+
+      if (data.success) {
+        setText("");
+        setImage(null);
+        dispatch(addMessage(data.data));
+      } else {
+        throw new Error(data.message);
+      }
+    } catch (error) {
+      toast.error(error.message);
+    }
+  };
+
+  const fetchUserMessages = async () => {
+    try {
+      const token = await getToken();
+      dispatch(fetchMessages({ token, userId }));
+    } catch (error) {
+      toast.error(error.message);
+    }
+  };
 
   useEffect(() => {
-  if (chatContainerRef.current) {
-    chatContainerRef.current.scrollTo({
-      top: chatContainerRef.current.scrollHeight,
-      behavior: 'smooth'
-    });
-  }
-}, [messages]);
+    fetchUserMessages();
+    return () => {
+      dispatch(resetMessages());
+    }
+  }, [userId]);
+
+  useEffect(() => {
+    if (connections.length > 0) {
+      const user = connections.find(connection => connection._id === userId);
+      setUser(user)
+    }
+  }, [connections, userId])
+
+  useEffect(() => {
+    if (chatContainerRef.current) {
+      chatContainerRef.current.scrollTo({
+        top: chatContainerRef.current.scrollHeight,
+        behavior: "smooth",
+      });
+    }
+  }, [messages]);
 
   return (
     user && (
@@ -61,7 +125,10 @@ const ChatBox = () => {
         </div>
 
         {/* Chat Box */}
-        <div ref={chatContainerRef} className="p-5 md:px-10 h-full overflow-y-scroll no-scrollbar">
+        <div
+          ref={chatContainerRef}
+          className="p-5 md:px-10 h-full overflow-y-scroll no-scrollbar"
+        >
           <div className="space-y-4 max-w-4xl mx-auto">
             {messages
               .toSorted((a, b) => new Date(a.createdAt) - new Date(b.createdAt))
@@ -91,13 +158,11 @@ const ChatBox = () => {
                           className="w-full max-w-sm rounded-lg mb-1"
                         />
                       )}
-                      <p>{message.text}</p>
+                      <p>{message.message_text}</p>
                     </div>
                   </div>
                 );
               })}
-
-            
           </div>
         </div>
 

@@ -1,23 +1,70 @@
 import React from "react";
+import { useNavigate } from "react-router-dom";
 import { MapPin, MessageCircle, Plus, UserPlus } from "lucide-react";
 import { dummyUserData } from "../assets/assets.js";
 import { useTheme } from "../context/AppContext";
+import { useDispatch, useSelector } from "react-redux";
+import { useAuth } from "@clerk/clerk-react";
+import api from "../api/axios.js";
+import { fetchUser } from "../features/user/userSlice.js";
+import toast from "react-hot-toast";
 
 const UserCard = ({ user }) => {
   const { isDarkMode } = useTheme();
-  const currentUser = dummyUserData;
+  const currentUser = useSelector((state) => state.user.value);
 
-  const handleFollow = async () => {};
+  const { getToken } = useAuth();
+  const dispatch = useDispatch();
+  const navigate = useNavigate();
 
-  const handleConnectionRequest = async () => {};
+  const handleFollow = async () => {
+    try {
+      const token = await getToken();
+      const { data } = await api.post(
+        "/api/user/follow",
+        { followId: user._id },
+        { headers: { Authorization: token } },
+      );
+
+      if (data.success) {
+        toast.success(data.message);
+        dispatch(fetchUser(token));
+      } else {
+        toast.error(data.message);
+      }
+    } catch (error) {
+      toast.error(error.message);
+    }
+  };
+
+  const handleConnectionRequest = async () => {
+    if (currentUser?.connections.includes(user._id)) {
+      navigate(`/messages/${user._id}`);
+    }
+
+    try {
+      const token = await getToken();
+      const { data } = await api.post(
+        "/api/user/connect",
+        { connectionToUserId: user._id },
+        { headers: { Authorization: token } },
+      );
+
+      if (data.success) {
+        toast.success(data.message);
+      } else {
+        toast.error(data.message);
+      }
+    } catch (error) {
+      toast.error(error.message);
+    }
+  };
 
   return (
     <div
       key={user._id}
       className={`p-4 pt-6 flex flex-col justify-between w-72 max-lg:w-55 max-sm:w-72 shadow border rounded-md ${
-        !isDarkMode 
-          ? "bg-gray-800 border-gray-700" 
-          : "bg-white border-gray-200"
+        !isDarkMode ? "bg-gray-800 border-gray-700" : "bg-white border-gray-200"
       }`}
     >
       {/* User Information */}
@@ -27,43 +74,55 @@ const UserCard = ({ user }) => {
           alt="Profile Picture"
           className="rounded-full w-16 shadow-md mx-auto"
         />
-        <p className={`mt-4 font-semibold ${
-          !isDarkMode ? "text-gray-100" : "text-slate-900"
-        }`}>
+        <p
+          className={`mt-4 font-semibold ${
+            !isDarkMode ? "text-gray-100" : "text-slate-900"
+          }`}
+        >
           {user.full_name}
         </p>
         {user.username && (
-          <p className={`font-light ${
-            !isDarkMode ? "text-gray-400" : "text-gray-500"
-          }`}>
+          <p
+            className={`font-light ${
+              !isDarkMode ? "text-gray-400" : "text-gray-500"
+            }`}
+          >
             @{user.username}
           </p>
         )}
         {user.bio && (
-          <p className={`mt-2 text-center text-sm px-4 ${
-            !isDarkMode ? "text-gray-400" : "text-gray-600"
-          }`}>
+          <p
+            className={`mt-2 text-center text-sm px-4 ${
+              !isDarkMode ? "text-gray-400" : "text-gray-600"
+            }`}
+          >
             {user.bio}
           </p>
         )}
       </div>
 
       {/* User Location and Followers */}
-      <div className={`flex items-center justify-center gap-2 mt-4 text-xs ${
-        !isDarkMode ? "text-gray-400" : "text-gray-600"
-      }`}>
+      <div
+        className={`flex items-center justify-center gap-2 mt-4 text-xs ${
+          !isDarkMode ? "text-gray-400" : "text-gray-600"
+        }`}
+      >
         {/* Location */}
-        <div className={`flex items-center gap-1 border rounded-full px-3 py-1 ${
-          !isDarkMode ? "border-gray-600" : "border-gray-300"
-        }`}>
+        <div
+          className={`flex items-center gap-1 border rounded-full px-3 py-1 ${
+            !isDarkMode ? "border-gray-600" : "border-gray-300"
+          }`}
+        >
           <MapPin className="w-4 h-4" />
           {user.location}
         </div>
 
         {/* Followers */}
-        <div className={`flex items-center gap-1 border rounded-full px-3 py-1 ${
-          !isDarkMode ? "border-gray-600" : "border-gray-300"
-        }`}>
+        <div
+          className={`flex items-center gap-1 border rounded-full px-3 py-1 ${
+            !isDarkMode ? "border-gray-600" : "border-gray-300"
+          }`}
+        >
           <span>{user.followers.length}</span>Followers
         </div>
       </div>
@@ -83,8 +142,8 @@ const UserCard = ({ user }) => {
         <button
           onClick={handleConnectionRequest}
           className={`flex items-center justify-center w-16 border group rounded-md cursor-pointer active:scale-95 transition ${
-            !isDarkMode 
-              ? "border-gray-600 text-gray-400 hover:border-gray-500" 
+            !isDarkMode
+              ? "border-gray-600 text-gray-400 hover:border-gray-500"
               : "border-gray-300 text-slate-500 hover:border-gray-400"
           }`}
         >
