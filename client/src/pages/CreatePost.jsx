@@ -21,6 +21,7 @@ const CreatePost = () => {
   const handleSubmit = async () => {
     if (!images.length && !content) {
       toast.error("Post cannot be empty");
+      throw new Error("Post cannot be empty");
     }
 
     setLoading(true);
@@ -179,8 +180,7 @@ const CreatePost = () => {
               onClick={() =>
                 toast.promise(handleSubmit(), {
                   loading: "Publishing post...",
-                  success: <p>Post published successfully!</p>,
-                  error: <p>Failed to publish post.</p>,
+                  success: <p>Post published successfully!</p>
                 })
               }
               className="text-sm bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 active:scale-95 transition text-white font-medium px-8 py-2 rounded-md cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
