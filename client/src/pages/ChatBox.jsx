@@ -15,7 +15,7 @@ import toast from "react-hot-toast";
 
 const ChatBox = () => {
   const { isDarkMode } = useTheme();
-  const {messages} = useSelector((state) => state.messages);
+  const { messages } = useSelector((state) => state.messages);
   const { userId } = useParams();
   const [text, setText] = useState("");
   const [image, setImage] = useState(null);
@@ -67,15 +67,15 @@ const ChatBox = () => {
     fetchUserMessages();
     return () => {
       dispatch(resetMessages());
-    }
+    };
   }, [userId]);
 
   useEffect(() => {
     if (connections.length > 0) {
-      const user = connections.find(connection => connection._id === userId);
-      setUser(user)
+      const user = connections.find((connection) => connection._id === userId);
+      setUser(user);
     }
-  }, [connections, userId])
+  }, [connections, userId]);
 
   useEffect(() => {
     if (chatContainerRef.current) {
@@ -143,7 +143,7 @@ const ChatBox = () => {
                     }`}
                   >
                     <div
-                      className={`p-2 text-sm max-w-sm rounded-lg shadow ${
+                      className={`p-2 text-sm max-w-[85vw] sm:max-w-sm rounded-lg shadow ${
                         message.to_user_id !== user._id
                           ? !isDarkMode
                             ? "bg-gray-700 text-gray-100 rounded-bl-none"
@@ -155,10 +155,12 @@ const ChatBox = () => {
                         <img
                           src={message.media_url}
                           alt="Message Media"
-                          className="w-full max-w-sm rounded-lg mb-1"
+                          className="w-full rounded-lg mb-1"
                         />
                       )}
-                      <p>{message.message_text}</p>
+                      <div className="break-words whitespace-pre-wrap">
+                        {message.message_text}
+                      </div>
                     </div>
                   </div>
                 );
